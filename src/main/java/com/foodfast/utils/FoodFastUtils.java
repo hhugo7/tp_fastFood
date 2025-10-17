@@ -2,6 +2,18 @@ package com.foodfast.utils;
 
 public class FoodFastUtils {
 
+    /**
+     * Constructor
+     */
+    public FoodFastUtils() {
+        return;
+    }
+
+    /**
+     * FizzBuzz function
+     * @param n input number
+     * @return fizz, buzz or fizzbuzz
+     */
     public static String deliveryPlanner(int n){
         String returnString = "";
 
@@ -22,4 +34,20 @@ public class FoodFastUtils {
         return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
+
+    /**
+     * Returns the sum up to a number
+     * @param n number to sum up to
+     * @return sum
+     */
+    public static int sumUpTo(int n) {
+
+        int result = 0;
+
+        for (int i = 0; i <= n; i++) {
+            result += i;
+        }
+
+        return result;
+    }
 }
