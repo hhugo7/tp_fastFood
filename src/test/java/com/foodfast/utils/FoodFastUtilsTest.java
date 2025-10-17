@@ -14,4 +14,10 @@ public class FoodFastUtilsTest {
         Assertions.assertEquals("FizzBuzz", FoodFastUtils.deliveryPlanner(15));
     }
 
+    @Test
+    void testLeapYear()
+    {
+        Assertions.assertTrue(FoodFastUtils.isLeapYear(2024));
+    }
+
 }
