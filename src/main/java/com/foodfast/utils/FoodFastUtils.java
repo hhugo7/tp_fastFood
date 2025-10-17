@@ -2,7 +2,7 @@ package com.foodfast.utils;
 
 public class FoodFastUtils {
 
-    public static String deliveryPlanner(int n){
+    public static String deliveryPlanner(int n) {
         String returnString = "";
 
         int modulo3 = n % 3;
@@ -22,4 +22,12 @@ public class FoodFastUtils {
         return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
+    public static String anonymize(String text) {
+        String reverseString = "";
+
+        for (int i = 0; i < text.length(); i++) {
+            reverseString = reverseString + text.charAt(i);
+        }
+        return reverseString;
+    }
 }
