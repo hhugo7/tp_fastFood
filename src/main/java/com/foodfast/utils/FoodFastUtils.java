@@ -30,10 +30,20 @@ public class FoodFastUtils {
         return returnString;
     }
 
+    /**
+     * Returns if a year is a leap year or not
+     * @param year year
+     * @return leap year
+     */
     public static boolean isLeapYear(int year) {
         return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
+    /**
+     * Reverses a string
+     * @param text string to reverse
+     * @return reversed string
+     */
     public static String anonymize(String text) {
         String reverseString = "";
 
