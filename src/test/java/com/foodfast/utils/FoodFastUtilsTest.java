@@ -20,4 +20,10 @@ public class FoodFastUtilsTest {
         Assertions.assertTrue(FoodFastUtils.isLeapYear(2024));
     }
 
+    @Test
+    void reverseString()
+    {
+        Assertions.assertEquals("CBA", FoodFastUtils.anonymize("ABC"));
+    }
+
 }

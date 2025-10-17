@@ -46,9 +46,8 @@ public class FoodFastUtils {
      */
     public static String anonymize(String text) {
         String reverseString = "";
-
-        for (int i = 0; i < text.length(); i++) {
-            reverseString = reverseString + text.charAt(i);
+        for (int i = text.length() - 1; i >= 0; i--) {
+            reverseString += text.charAt(i);
         }
         return reverseString;
     }
