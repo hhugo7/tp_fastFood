@@ -4,8 +4,13 @@ import com.foodfast.business.Customer;
 import com.foodfast.business.Order;
 import com.foodfast.business.OrderStatus;
 import com.foodfast.business.Restaurant;
+import com.foodfast.database.DatabaseConfig;
 import com.foodfast.exceptions.OrderPreparationException;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -70,6 +75,7 @@ public class DeliveryPlatform
         }
 
         orders.put(order.getId(), order);
+        this.saveOrder(order);
     }
 
     /**
@@ -117,5 +123,87 @@ public class DeliveryPlatform
         return orders.values().stream()
                 .filter(order -> order.getStatus() == status)
                 .toList();
+    }
+
+    /**
+     * Sauvegarde une commande et ses plats associés dans la base de données PostgreSQL.
+     * Utilise PreparedStatement pour insérer de manière sécurisée :
+     * 1. La commande dans la table orders
+     * 2. Les plats de la commande dans la table order_dishes
+     *
+     * @param order la commande à sauvegarder
+     * @return true si la sauvegarde est réussie, false en cas d'erreur
+     * @throws IllegalArgumentException si la commande est nulle
+     */
+    public boolean saveOrder(Order order)
+    {
+        if (order == null) {
+            throw new IllegalArgumentException("La commande ne peut pas être nulle");
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            // Désactive l'autocommit pour gérer manuellement la transaction
+            conn.setAutoCommit(false);
+
+            try {
+                // 1. Insertion de la commande dans la table orders
+                String sqlOrder = "INSERT INTO orders (order_id, customer_id, status, order_date) VALUES (?, ?, ?, ?)";
+                try (PreparedStatement pstmtOrder = conn.prepareStatement(sqlOrder)) {
+                    pstmtOrder.setString(1, order.getId());
+
+                    // Récupère l'ID du client s'il existe, sinon utilise null
+                    String customerId = (order.getCustomer() != null) ? order.getCustomer().getId() : null;
+                    if (customerId != null) {
+                        pstmtOrder.setString(2, customerId);
+                    } else {
+                        pstmtOrder.setNull(2, java.sql.Types.VARCHAR);
+                    }
+
+                    // Sauvegarde le statut de la commande
+                    pstmtOrder.setString(3, order.getStatus().name());
+
+                    // Sauvegarde la date de commande ou la date actuelle
+                    LocalDateTime orderDate = (order.getOrderDate() != null) ? order.getOrderDate() : LocalDateTime.now();
+                    pstmtOrder.setObject(4, orderDate);
+
+                    pstmtOrder.executeUpdate();
+                }
+
+                // 2. Insertion des plats de la commande dans la table order_dishes
+                if (order.getDishes() != null && !order.getDishes().isEmpty()) {
+                    String sqlDish = "INSERT INTO order_dishes (order_id, name, quantity) VALUES (?, ?, ?)";
+                    try (PreparedStatement pstmtDish = conn.prepareStatement(sqlDish)) {
+                        for (Map.Entry<com.foodfast.business.Dish, Integer> entry : order.getDishes().entrySet()) {
+                            com.foodfast.business.Dish dish = entry.getKey();
+                            Integer quantity = entry.getValue();
+
+                            pstmtDish.setString(1, order.getId());
+                            pstmtDish.setString(2, dish.getName());
+                            pstmtDish.setInt(3, quantity != null ? quantity : 1);
+
+                            pstmtDish.addBatch();
+                        }
+                        pstmtDish.executeBatch();
+                    }
+                }
+
+                // Valide la transaction
+                conn.commit();
+                System.out.println("Commande avec l'ID " + order.getId() + " et ses plats sauvegardés dans la base de données.");
+                return true;
+
+            } catch (SQLException e) {
+                // Annule la transaction en cas d'erreur
+                conn.rollback();
+                System.err.println("Erreur lors de la sauvegarde de la commande : " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erreur de connexion à la base de données : " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }
