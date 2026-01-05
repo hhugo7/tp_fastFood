@@ -422,4 +422,131 @@ class DeliveryPlatformTest {
         assertFalse(pendingOrders.contains(order2));
     }
 
+    @Test
+    void testPlaceOrderWithSuccessfulPreparation() {
+        // Essayer plusieurs fois pour augmenter les chances d'une préparation réussie
+        Order testOrder = new Order()
+                .setCustomer(customer)
+                .setOrderDate(LocalDateTime.now());
+        testOrder.setDishes(new HashMap<>());
+
+        boolean successfulPreparation = false;
+        for (int i = 0; i < 20; i++) {
+            Order attemptOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            attemptOrder.setDishes(new HashMap<>());
+
+            platform.placeOrder(attemptOrder);
+
+            if (attemptOrder.getStatus() == OrderStatus.IN_PREPARATION) {
+                successfulPreparation = true;
+                assertEquals(OrderStatus.IN_PREPARATION, attemptOrder.getStatus());
+                assertTrue(platform.getOrders().containsKey(attemptOrder.getId()));
+                break;
+            }
+        }
+
+        assertTrue(successfulPreparation, "Aucune préparation réussie après 20 tentatives");
+    }
+
+    @Test
+    void testPlaceOrderWithFailedPreparation() {
+        // Essayer plusieurs fois pour augmenter les chances d'une préparation échouée
+        boolean failedPreparation = false;
+        for (int i = 0; i < 100; i++) {
+            Order testOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            testOrder.setDishes(new HashMap<>());
+
+            platform.placeOrder(testOrder);
+
+            if (testOrder.getStatus() == OrderStatus.CANCELLED) {
+                failedPreparation = true;
+                assertEquals(OrderStatus.CANCELLED, testOrder.getStatus());
+                assertTrue(platform.getOrders().containsKey(testOrder.getId()));
+                break;
+            }
+        }
+
+        assertTrue(failedPreparation, "Aucune préparation échouée après 100 tentatives (20% attendu)");
+    }
+
+    @Test
+    void testPlaceOrderStorageAfterPreparationFailure() {
+        // Essayer plusieurs fois pour augmenter les chances d'une préparation échouée
+        for (int i = 0; i < 100; i++) {
+            Order testOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            testOrder.setDishes(new HashMap<>());
+
+            platform.placeOrder(testOrder);
+
+            if (testOrder.getStatus() == OrderStatus.CANCELLED) {
+                // Vérifier que la commande est stockée
+                Optional<Order> retrievedOrder = platform.findOrderById(testOrder.getId());
+                assertTrue(retrievedOrder.isPresent());
+                assertEquals(OrderStatus.CANCELLED, retrievedOrder.get().getStatus());
+                break;
+            }
+        }
+    }
+
+    @Test
+    void testPlaceOrderStorageAfterSuccessfulPreparation() {
+        // Essayer plusieurs fois pour augmenter les chances d'une préparation réussie
+        for (int i = 0; i < 20; i++) {
+            Order testOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            testOrder.setDishes(new HashMap<>());
+
+            platform.placeOrder(testOrder);
+
+            if (testOrder.getStatus() == OrderStatus.IN_PREPARATION) {
+                // Vérifier que la commande est stockée avec le bon statut
+                Optional<Order> retrievedOrder = platform.findOrderById(testOrder.getId());
+                assertTrue(retrievedOrder.isPresent());
+                assertEquals(OrderStatus.IN_PREPARATION, retrievedOrder.get().getStatus());
+                break;
+            }
+        }
+    }
+
+    @Test
+    void testFindCancelledOrdersAfterPreparationFailure() {
+        // Placer plusieurs commandes pour augmenter les chances d'en avoir au moins une échouée
+        for (int i = 0; i < 50; i++) {
+            Order testOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            testOrder.setDishes(new HashMap<>());
+            platform.placeOrder(testOrder);
+        }
+
+        var cancelledOrders = platform.findOrdersByStatus(OrderStatus.CANCELLED);
+
+        // Vérifier qu'il y a au moins une commande annulée (statiquement improbable d'avoir 0 sur 50)
+        assertTrue(cancelledOrders.size() > 0, "Aucune commande annulée trouvée après 50 tentatives");
+    }
+
+    @Test
+    void testFindInPreparationOrdersAfterSuccessfulPreparation() {
+        // Placer plusieurs commandes pour augmenter les chances d'en avoir au moins une réussie
+        for (int i = 0; i < 20; i++) {
+            Order testOrder = new Order()
+                    .setCustomer(customer)
+                    .setOrderDate(LocalDateTime.now());
+            testOrder.setDishes(new HashMap<>());
+            platform.placeOrder(testOrder);
+        }
+
+        var inPrepOrders = platform.findOrdersByStatus(OrderStatus.IN_PREPARATION);
+
+        // Vérifier qu'il y a au moins une commande en préparation
+        assertTrue(inPrepOrders.size() > 0, "Aucune commande en préparation trouvée après 20 tentatives");
+    }
+
 }

@@ -3,6 +3,8 @@ package com.foodfast;
 import com.foodfast.business.Customer;
 import com.foodfast.business.Order;
 import com.foodfast.business.OrderStatus;
+import com.foodfast.business.Restaurant;
+import com.foodfast.exceptions.OrderPreparationException;
 
 import java.util.*;
 
@@ -14,14 +16,17 @@ import java.util.*;
 public class DeliveryPlatform
 {
     private final Map<String, Order> orders;
+    private final Restaurant restaurant;
 
     /**
      * Constructeur de DeliveryPlatform.
-     * Initialise une nouvelle instance avec une Map vide pour stocker les commandes.
+     * Initialise une nouvelle instance avec une Map vide pour stocker les commandes
+     * et crée une nouvelle instance de Restaurant.
      */
     public DeliveryPlatform()
     {
         this.orders = new HashMap<>();
+        this.restaurant = new Restaurant();
     }
 
     /**
@@ -37,6 +42,8 @@ public class DeliveryPlatform
     /**
      * Place une nouvelle commande sur la plateforme.
      * La commande est stockée dans la Map avec son ID comme clé.
+     * Le restaurant tente de préparer la commande. En cas d'erreur de préparation,
+     * la commande est passée au statut CANCELLED et un message d'erreur est affiché.
      *
      * @param order la commande à placer
      * @throws IllegalArgumentException si la commande est nulle
@@ -50,6 +57,15 @@ public class DeliveryPlatform
         if (order.getId() == null || order.getId().isEmpty()) {
             throw new IllegalArgumentException("La commande doit avoir un ID");
         }
+
+        try {
+            restaurant.prepare(order);
+            order.setStatus(OrderStatus.IN_PREPARATION);
+        } catch (OrderPreparationException e) {
+            order.setStatus(OrderStatus.CANCELLED);
+            System.out.println("Erreur lors de la préparation : " + e.getMessage());
+        }
+
         orders.put(order.getId(), order);
     }
 
