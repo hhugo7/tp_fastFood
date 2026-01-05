@@ -7,6 +7,7 @@ import com.foodfast.business.Restaurant;
 import com.foodfast.exceptions.OrderPreparationException;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Plateforme de gestion des commandes et livraisons de FoodFast.
@@ -20,12 +21,12 @@ public class DeliveryPlatform
 
     /**
      * Constructeur de DeliveryPlatform.
-     * Initialise une nouvelle instance avec une Map vide pour stocker les commandes
+     * Initialise une nouvelle instance avec une ConcurrentHashMap pour stocker les commandes
      * et crée une nouvelle instance de Restaurant.
      */
     public DeliveryPlatform()
     {
-        this.orders = new HashMap<>();
+        this.orders = new ConcurrentHashMap<>();
         this.restaurant = new Restaurant();
     }
 
@@ -40,16 +41,18 @@ public class DeliveryPlatform
     }
 
     /**
-     * Place une nouvelle commande sur la plateforme.
-     * La commande est stockée dans la Map avec son ID comme clé.
+     * Place une nouvelle commande sur la plateforme de manière thread-safe.
+     * La commande est stockée dans la ConcurrentHashMap avec son ID comme clé.
      * Le restaurant tente de préparer la commande. En cas d'erreur de préparation,
      * la commande est passée au statut CANCELLED et un message d'erreur est affiché.
+     * Cette méthode est synchronisée pour éviter les race conditions lors de la modification
+     * simultanée de l'état de la commande.
      *
      * @param order la commande à placer
      * @throws IllegalArgumentException si la commande est nulle
      * @throws IllegalArgumentException si l'ID de la commande est null ou vide
      */
-    public void placeOrder(Order order)
+    public synchronized void placeOrder(Order order)
     {
         if (order == null) {
             throw new IllegalArgumentException("La commande ne peut pas être nulle");
