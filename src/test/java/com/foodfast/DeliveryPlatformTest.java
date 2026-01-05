@@ -239,4 +239,187 @@ class DeliveryPlatformTest {
         assertTrue(platform.findOrderById(order2.getId()).isPresent());
     }
 
+    // ==================== Tests pour findOrdersByCustomer ====================
+
+    @Test
+    void testFindOrdersByCustomerSuccess() {
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var ordersOfCustomer = platform.findOrdersByCustomer(customer);
+
+        assertEquals(2, ordersOfCustomer.size());
+        assertTrue(ordersOfCustomer.contains(order1));
+        assertTrue(ordersOfCustomer.contains(order2));
+    }
+
+    @Test
+    void testFindOrdersByCustomerWithNullCustomer() {
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var ordersOfNullCustomer = platform.findOrdersByCustomer(null);
+
+        assertTrue(ordersOfNullCustomer.isEmpty());
+    }
+
+    @Test
+    void testFindOrdersByCustomerNoOrders() {
+        Customer otherCustomer = new Customer()
+                .setId("CUST002")
+                .setName("Marie Leblanc")
+                .setAddress("456 Avenue des Champs");
+
+        var ordersOfOtherCustomer = platform.findOrdersByCustomer(otherCustomer);
+
+        assertTrue(ordersOfOtherCustomer.isEmpty());
+    }
+
+    @Test
+    void testFindOrdersByCustomerMultipleCustomers() {
+        Customer customer2 = new Customer()
+                .setId("CUST002")
+                .setName("Marie Leblanc")
+                .setAddress("456 Avenue des Champs");
+
+        Order order3 = new Order()
+                .setCustomer(customer2)
+                .setOrderDate(LocalDateTime.now())
+                .setStatus(OrderStatus.PENDING);
+        order3.setDishes(new HashMap<>());
+        order3.addDish(new Dish()
+                .setName("Burger")
+                .setPrice(new BigDecimal("9.50"))
+                .setSize(DishSize.MEDIUM));
+
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+        platform.placeOrder(order3);
+
+        var ordersOfCustomer1 = platform.findOrdersByCustomer(customer);
+        var ordersOfCustomer2 = platform.findOrdersByCustomer(customer2);
+
+        assertEquals(2, ordersOfCustomer1.size());
+        assertEquals(1, ordersOfCustomer2.size());
+        assertTrue(ordersOfCustomer1.contains(order1));
+        assertTrue(ordersOfCustomer1.contains(order2));
+        assertTrue(ordersOfCustomer2.contains(order3));
+        assertFalse(ordersOfCustomer1.contains(order3));
+    }
+
+    @Test
+    void testFindOrdersByCustomerWithoutCustomerSet() {
+        Order orderWithoutCustomer = new Order()
+                .setOrderDate(LocalDateTime.now())
+                .setStatus(OrderStatus.PENDING);
+        orderWithoutCustomer.setDishes(new HashMap<>());
+
+        platform.placeOrder(order1);
+        platform.placeOrder(orderWithoutCustomer);
+
+        var ordersOfCustomer = platform.findOrdersByCustomer(customer);
+
+        assertEquals(1, ordersOfCustomer.size());
+        assertTrue(ordersOfCustomer.contains(order1));
+        assertFalse(ordersOfCustomer.contains(orderWithoutCustomer));
+    }
+
+    // ==================== Tests pour findOrdersByStatus ====================
+
+    @Test
+    void testFindOrdersByStatusSuccess() {
+        order1.setStatus(OrderStatus.PENDING);
+        order2.setStatus(OrderStatus.PENDING);
+
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var pendingOrders = platform.findOrdersByStatus(OrderStatus.PENDING);
+
+        assertEquals(2, pendingOrders.size());
+        assertTrue(pendingOrders.contains(order1));
+        assertTrue(pendingOrders.contains(order2));
+    }
+
+    @Test
+    void testFindOrdersByStatusWithNullStatus() {
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var ordersWithNullStatus = platform.findOrdersByStatus(null);
+
+        assertTrue(ordersWithNullStatus.isEmpty());
+    }
+
+    @Test
+    void testFindOrdersByStatusNoOrders() {
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var completedOrders = platform.findOrdersByStatus(OrderStatus.COMPLETED);
+
+        assertTrue(completedOrders.isEmpty());
+    }
+
+    @Test
+    void testFindOrdersByStatusMultipleStatuses() {
+        order1.setStatus(OrderStatus.PENDING);
+        order2.setStatus(OrderStatus.IN_PREPARATION);
+
+        Order order3 = new Order()
+                .setCustomer(customer)
+                .setOrderDate(LocalDateTime.now())
+                .setStatus(OrderStatus.COMPLETED);
+        order3.setDishes(new HashMap<>());
+        order3.addDish(new Dish()
+                .setName("Salade")
+                .setPrice(new BigDecimal("8.50"))
+                .setSize(DishSize.SMALL));
+
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+        platform.placeOrder(order3);
+
+        var pendingOrders = platform.findOrdersByStatus(OrderStatus.PENDING);
+        var inPrepOrders = platform.findOrdersByStatus(OrderStatus.IN_PREPARATION);
+        var completedOrders = platform.findOrdersByStatus(OrderStatus.COMPLETED);
+
+        assertEquals(1, pendingOrders.size());
+        assertEquals(1, inPrepOrders.size());
+        assertEquals(1, completedOrders.size());
+        assertTrue(pendingOrders.contains(order1));
+        assertTrue(inPrepOrders.contains(order2));
+        assertTrue(completedOrders.contains(order3));
+    }
+
+    @Test
+    void testFindOrdersByStatusAllOrders() {
+        order1.setStatus(OrderStatus.IN_PREPARATION);
+        order2.setStatus(OrderStatus.IN_PREPARATION);
+
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var inPrepOrders = platform.findOrdersByStatus(OrderStatus.IN_PREPARATION);
+
+        assertEquals(2, inPrepOrders.size());
+        assertTrue(inPrepOrders.contains(order1));
+        assertTrue(inPrepOrders.contains(order2));
+    }
+
+    @Test
+    void testFindOrdersByStatusDoesNotReturnOtherStatuses() {
+        order1.setStatus(OrderStatus.PENDING);
+        order2.setStatus(OrderStatus.COMPLETED);
+
+        platform.placeOrder(order1);
+        platform.placeOrder(order2);
+
+        var pendingOrders = platform.findOrdersByStatus(OrderStatus.PENDING);
+
+        assertEquals(1, pendingOrders.size());
+        assertTrue(pendingOrders.contains(order1));
+        assertFalse(pendingOrders.contains(order2));
+    }
+
 }
