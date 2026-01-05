@@ -45,11 +45,11 @@ public class FoodFastUtils {
      * @return reversed string
      */
     public static String anonymize(String text) {
-        String reverseString = "";
+        StringBuilder reverseString = new StringBuilder();
         for (int i = text.length() - 1; i >= 0; i--) {
-            reverseString += text.charAt(i);
+            reverseString.append(text.charAt(i));
         }
-        return reverseString;
+        return reverseString.toString();
     }
 
     /**
